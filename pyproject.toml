@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhalo"
-version = "1.0.0"
+version = "1.0.1"
 description = "HALO-S: Sparse Attention Language Model Framework with O(N×K) complexity"
 readme = "README.md"
 license = {file = "LICENSE"}
