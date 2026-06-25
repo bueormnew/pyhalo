@@ -1,0 +1,46 @@
+HALO-S Framework License
+
+Copyright (c) 2026 BUEORM. All rights reserved.
+
+TERMS AND CONDITIONS
+
+1. EDUCATIONAL AND RESEARCH USE
+
+Permission is hereby granted, free of charge, to any person or organization
+obtaining a copy of this software and associated documentation files (the
+"Software"), to use, copy, modify, and distribute the Software for educational
+and research purposes, subject to the following conditions:
+
+   a) The above copyright notice and this permission notice shall be included
+      in all copies or substantial portions of the Software.
+
+   b) Any derivative work, publication, or project that uses, builds upon, or
+      incorporates any part of this Software MUST credit the architecture by
+      name. Specifically, the name "HALO-S" must appear in a visible and
+      accessible location (e.g., documentation, README, paper acknowledgments,
+      or about page) of any derivative work.
+
+2. COMMERCIAL AND PRODUCTION USE
+
+Use of this Software in commercial products, production systems, or any
+revenue-generating activity is NOT permitted under this free license. To obtain
+a commercial license for production or commercial use, you must contact the
+developer and pay the applicable license fee.
+
+Commercial use includes, but is not limited to:
+   - Deploying the Software or derivative works as part of a paid service
+   - Incorporating the Software into proprietary products
+   - Using the Software to generate revenue directly or indirectly
+   - Offering the Software as part of a Software-as-a-Service (SaaS) platform
+
+For commercial licensing inquiries, contact: dalusx64@gmail.com
+
+3. DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

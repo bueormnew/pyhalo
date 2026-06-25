@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data & models
+*.pt
+*.pth
+*.model
+*.vocab
+checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific excludes (NOT for the library)
+TODO.md
+exp1_results.txt
+exp2_results.txt
+exp3_results.txt
+.kiro/

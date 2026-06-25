@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyhalo"
+version = "1.0.0"
+description = "HALO-S: Sparse Attention Language Model Framework with O(N×K) complexity"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+authors = [
+    {name = "BUEORM", email = "dalusx64@gmail.com"}
+]
+keywords = ["transformer", "sparse-attention", "language-model", "deep-learning", "pytorch", "halo-s"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "tqdm",
+    "sentencepiece",
+]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/bueormnew/pyhalo"
+Documentation = "https://github.com/bueormnew/pyhalo/tree/main/docs"
+Repository = "https://github.com/bueormnew/pyhalo"
+Issues = "https://github.com/bueormnew/pyhalo/issues"
+
+[tool.setuptools.packages.find]
+include = ["halo*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
