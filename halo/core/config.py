@@ -20,6 +20,9 @@ class HaloConfig:
     dropout: float = 0.1
     max_seq_len: int = 4096
     
+    # v2.0 flags
+    use_swiglu: bool = True
+    
     def __post_init__(self):
         """Validación de parámetros al crear la instancia."""
         assert self.hidden_size % self.num_heads == 0, (
@@ -68,5 +71,12 @@ class HaloConfig:
     
     @classmethod
     def from_dict(cls, d: dict) -> "HaloConfig":
-        """Reconstruye una instancia de HaloConfig desde un diccionario."""
-        return cls(**d)
+        """Reconstruye una instancia de HaloConfig desde un diccionario.
+        
+        Tolerates old configs that don't include v2.0 fields by filtering
+        unknown keys and relying on defaults.
+        """
+        import inspect
+        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        filtered = {k: v for k, v in d.items() if k in valid_fields}
+        return cls(**filtered)

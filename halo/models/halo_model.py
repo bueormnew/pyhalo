@@ -1,5 +1,16 @@
+"""
+HALO-S Language Model v2.0.
+
+Incluye:
+- Gradient checkpointing para reducir uso de memoria
+- torch.compile compatibility
+- from_pretrained class method para carga de checkpoints
+- Backward compatible con checkpoints v1.x
+"""
+
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint
 from halo.core.config import HaloConfig
 from halo.nn.halo_block import HaloBlock
 from halo.nn.rope import RotaryPositionalEmbeddings
@@ -7,64 +18,82 @@ from halo.generation.samplers import generate
 from halo.tokenizers.base import BaseTokenizer
 from halo.utils.metrics import estimate_memory
 
+
 class HaloSModel(nn.Module):
     """
     Modelo de Lenguaje HALO-S completo.
     Incorpora los Global Tokens, inyección de RoPE y el stack de HaloBlocks.
+    
+    v2.0: Gradient checkpointing, torch.compile support, from_pretrained.
     """
+
     def __init__(self, config: HaloConfig):
         super().__init__()
         self.config = config
-        
+        self._gradient_checkpointing = False
+
         # Embeddings de vocabulario
         self.token_emb = nn.Embedding(config.vocab_size, config.hidden_size)
-        
+
         # GLOBAL TOKENS
         # Se inyectan en las primeras 'num_globals' posiciones de cada secuencia
         self.global_memory = nn.Parameter(torch.randn(config.num_globals, config.hidden_size))
-        
+
         # Rotary Positional Embeddings
         self.rope = RotaryPositionalEmbeddings(config.head_dim, config.max_seq_len)
-        
+
         # Capas Transformadoras
         self.layers = nn.ModuleList([
             HaloBlock(config, layer_id=i) for i in range(config.num_layers)
         ])
-        
+
         self.ln_f = nn.LayerNorm(config.hidden_size)
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-        
+
+    def enable_gradient_checkpointing(self):
+        """Reduce memory usage by recomputing activations during backward."""
+        self._gradient_checkpointing = True
+
+    def disable_gradient_checkpointing(self):
+        """Disable gradient checkpointing (use full activation memory)."""
+        self._gradient_checkpointing = False
+
     def forward(self, input_ids: torch.Tensor, targets: torch.Tensor = None):
         batch_size, seq_len = input_ids.shape
-        
+
         x = self.token_emb(input_ids)
-        
+
         # Inyectar Global Tokens
         # globals: (batch, num_globals, hidden)
         globals_expanded = self.global_memory.unsqueeze(0).expand(batch_size, -1, -1)
-        x = torch.cat([globals_expanded, x], dim=1) # (batch, num_globals + seq_len, hidden)
-        
+        x = torch.cat([globals_expanded, x], dim=1)  # (batch, num_globals + seq_len, hidden)
+
         # Calcular RoPE
         cos, sin = self.rope(x)
-        
+
         # Propagación transitiva a través de capas locales y dispersas
         for layer in self.layers:
-            x = layer(x, cos, sin, is_causal=True)
-            
+            if self._gradient_checkpointing and self.training:
+                x = torch.utils.checkpoint.checkpoint(
+                    layer, x, cos, sin, True, use_reentrant=False
+                )
+            else:
+                x = layer(x, cos, sin, is_causal=True)
+
         x = self.ln_f(x)
-        
+
         # Extraer solo las posiciones de los tokens (descartando los globals) para calcular la pérdida
         x_out = x[:, self.config.num_globals:, :]
-        
+
         logits = self.lm_head(x_out)
-        
+
         loss = None
         if targets is not None:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.config.vocab_size), targets.view(-1))
-            
+
         return logits, loss
-        
+
     def generate(self, input_ids, max_new_tokens: int = 100, temperature: float = 1.0, top_k: int = None, top_p: float = None, tokenizer: BaseTokenizer = None):
         """
         Generación autoregresiva. Acepta un Tensor de IDs o un string.
@@ -85,12 +114,51 @@ class HaloSModel(nn.Module):
             return tokenizer.decode(output_ids)
         else:
             return generate(self, input_ids, max_new_tokens, temperature, top_k, top_p)
-        
+
+    @classmethod
+    def from_pretrained(cls, path: str, config: "HaloConfig" = None, device: str = "cpu") -> "HaloSModel":
+        """
+        Load a pretrained model from a checkpoint file.
+
+        Handles both raw state_dict files and Trainer checkpoint files
+        (which have a 'model_state_dict' key).
+
+        Args:
+            path: Path to the checkpoint file (.pt or .pth).
+            config: HaloConfig instance. If None, tries to load from checkpoint metadata.
+            device: Device to load the model onto.
+
+        Returns:
+            Loaded HaloSModel instance.
+        """
+        checkpoint = torch.load(path, map_location=device, weights_only=False)
+
+        # Handle Trainer checkpoint format vs raw state_dict
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            state_dict = checkpoint['model_state_dict']
+            # Try to reconstruct config from checkpoint if not provided
+            if config is None and 'config' in checkpoint:
+                config = HaloConfig.from_dict(checkpoint['config'])
+        else:
+            state_dict = checkpoint
+
+        if config is None:
+            raise ValueError(
+                "Cannot infer config from checkpoint. Please provide a HaloConfig instance."
+            )
+
+        model = cls(config)
+        # strict=False allows loading old checkpoints missing w3 (SwiGLU gate)
+        model.load_state_dict(state_dict, strict=False)
+        model.to(device)
+        return model
+
     def save(self, path: str):
         torch.save(self.state_dict(), path)
-        
+
     def load(self, path: str, device="cpu"):
-        self.load_state_dict(torch.load(path, map_location=device, weights_only=True))
+        state_dict = torch.load(path, map_location=device, weights_only=True)
+        self.load_state_dict(state_dict, strict=False)
 
     def count_parameters(self) -> int:
         """Devuelve el número total de parámetros entrenables del modelo."""
@@ -147,8 +215,9 @@ class HaloSModel(nn.Module):
         global_flops = global_qkv_flops + global_scores_flops + global_o_proj_flops
 
         # --- FLOPs de FFN por capa ---
-        # Dos capas lineales: hidden → 4*hidden → hidden, aplicadas a toda la secuencia
-        ffn_flops = 2 * total_seq * hidden * (4 * hidden) * 2
+        # SwiGLU has 3 linear layers: w1, w2, w3
+        ffn_multiplier = 3 if getattr(config, 'use_swiglu', True) else 2
+        ffn_flops = 2 * total_seq * hidden * (4 * hidden) * ffn_multiplier
 
         # --- FLOPs del LM Head ---
         lm_head_flops = 2 * seq_len * hidden * vocab_size
@@ -179,7 +248,7 @@ class HaloSModel(nn.Module):
 
         lines = [
             "=" * 60,
-            "HALO-S Model",
+            "HALO-S Model v2.0",
             "=" * 60,
             f"  vocab_size:      {config.vocab_size}",
             f"  hidden_size:     {config.hidden_size}",
@@ -190,6 +259,8 @@ class HaloSModel(nn.Module):
             f"  local_window:    {config.local_window}",
             f"  num_neighbors:   {config.num_neighbors}",
             f"  max_seq_len:     {config.max_seq_len}",
+            f"  use_swiglu:      {getattr(config, 'use_swiglu', True)}",
+            f"  grad_ckpt:       {self._gradient_checkpointing}",
             "-" * 60,
             f"  Total parámetros: {total_params:,}",
             f"  Memoria estimada: {mem_info['total_estimated_mb']:.2f} MB",
