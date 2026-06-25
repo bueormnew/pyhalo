@@ -14,7 +14,7 @@ Uso básico:
 Autor: BUEORM (dalusx64@gmail.com)
 """
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 # --- Core ---
 from halo.core.config import HaloConfig

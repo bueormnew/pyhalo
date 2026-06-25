@@ -3,8 +3,8 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyhalo"
-version = "1.0.2"
+name = "pyhalos"
+version = "1.0.3"
 description = "HALO-S: Sparse Attention Language Model Framework with O(N×K) complexity"
 readme = "README.md"
 license = {file = "LICENSE"}

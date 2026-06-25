@@ -7,7 +7,7 @@
 <p align="center">
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![PyPI](https://img.shields.io/pypi/v/pyhalo)
+![PyPI](https://img.shields.io/pypi/v/pyhalos)
 ![License](https://img.shields.io/badge/license-custom-orange)
 ![Tests](https://img.shields.io/badge/tests-55%20passed-green)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.1%2B-red)
@@ -206,10 +206,10 @@ The speedup grows **linearly with N** because dense attention is O(N²) while HA
 
 ```bash
 # Core installation (PyTorch + NumPy only)
-pip install pyhalo
+pip install pyhalos
 
 # Full installation (includes tqdm progress bars + SentencePiece tokenizer)
-pip install pyhalo[full]
+pip install pyhalos[full]
 ```
 
 ### From Source
@@ -731,10 +731,10 @@ Factor de reducción: 16,777,216 / 319,488 ≈ 52.5×
 
 ```bash
 # Instalación básica (solo PyTorch + NumPy)
-pip install pyhalo
+pip install pyhalos
 
 # Instalación completa (incluye tqdm + SentencePiece)
-pip install pyhalo[full]
+pip install pyhalos[full]
 
 # Desde código fuente
 git clone https://github.com/bueormnew/pyhalo.git
