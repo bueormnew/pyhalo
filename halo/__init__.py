@@ -14,11 +14,20 @@ Uso básico:
 Autor: BUEORM (dalusx64@gmail.com)
 """
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 # --- Core ---
 from halo.core.config import HaloConfig
-from halo.core.device import optimize_for_device, get_optimal_device, device_info
+from halo.core.device import (
+    optimize_for_device,
+    get_optimal_device,
+    device_info,
+    detect_device_profile,
+    get_optimal_batch_size,
+)
+
+# --- Hub ---
+from halo.hub import save_for_hub, load_from_hub, push_to_hub
 
 # --- Models ---
 from halo.models.halo_model import HaloSModel
@@ -50,6 +59,12 @@ __all__ = [
     "optimize_for_device",
     "get_optimal_device",
     "device_info",
+    "detect_device_profile",
+    "get_optimal_batch_size",
+    # Hub
+    "save_for_hub",
+    "load_from_hub",
+    "push_to_hub",
     # Models
     "HaloSModel",
     "BaselineModel",
