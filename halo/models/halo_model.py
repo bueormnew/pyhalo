@@ -1,16 +1,24 @@
 """
-HALO-S Language Model v2.0.
+HALO-S Language Model v2.1.
 
 Incluye:
 - Gradient checkpointing para reducir uso de memoria
 - torch.compile compatibility
 - from_pretrained class method para carga de checkpoints
 - Backward compatible con checkpoints v1.x
+- Soporte safetensors para save/load/from_pretrained
 """
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
+
+try:
+    from safetensors.torch import save_file as _save_safetensors, load_file as _load_safetensors
+    _SAFETENSORS_AVAILABLE = True
+except ImportError:
+    _SAFETENSORS_AVAILABLE = False
+
 from halo.core.config import HaloConfig
 from halo.nn.halo_block import HaloBlock
 from halo.nn.rope import RotaryPositionalEmbeddings
@@ -121,16 +129,28 @@ class HaloSModel(nn.Module):
         Load a pretrained model from a checkpoint file.
 
         Handles both raw state_dict files and Trainer checkpoint files
-        (which have a 'model_state_dict' key).
+        (which have a 'model_state_dict' key). Also supports .safetensors format.
 
         Args:
-            path: Path to the checkpoint file (.pt or .pth).
+            path: Path to the checkpoint file (.pt, .pth, or .safetensors).
             config: HaloConfig instance. If None, tries to load from checkpoint metadata.
             device: Device to load the model onto.
 
         Returns:
             Loaded HaloSModel instance.
         """
+        if path.endswith('.safetensors'):
+            if not _SAFETENSORS_AVAILABLE:
+                raise ImportError("safetensors no instalado. pip install safetensors")
+            state_dict = _load_safetensors(path, device=device)
+            # safetensors doesn't store config, so config must be provided
+            if config is None:
+                raise ValueError("Se requiere config para cargar desde safetensors")
+            model = cls(config)
+            model.load_state_dict(state_dict, strict=False)
+            model.to(device)
+            return model
+
         checkpoint = torch.load(path, map_location=device, weights_only=False)
 
         # Handle Trainer checkpoint format vs raw state_dict
@@ -154,10 +174,22 @@ class HaloSModel(nn.Module):
         return model
 
     def save(self, path: str):
-        torch.save(self.state_dict(), path)
+        """Guarda el modelo. Soporta .pt, .pth (torch) y .safetensors."""
+        if path.endswith('.safetensors'):
+            if not _SAFETENSORS_AVAILABLE:
+                raise ImportError("safetensors no instalado. pip install safetensors")
+            _save_safetensors(self.state_dict(), path)
+        else:
+            torch.save(self.state_dict(), path)
 
     def load(self, path: str, device="cpu"):
-        state_dict = torch.load(path, map_location=device, weights_only=True)
+        """Carga pesos. Soporta .pt, .pth (torch) y .safetensors."""
+        if path.endswith('.safetensors'):
+            if not _SAFETENSORS_AVAILABLE:
+                raise ImportError("safetensors no instalado. pip install safetensors")
+            state_dict = _load_safetensors(path, device=device)
+        else:
+            state_dict = torch.load(path, map_location=device, weights_only=True)
         self.load_state_dict(state_dict, strict=False)
 
     def count_parameters(self) -> int:

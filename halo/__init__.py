@@ -14,10 +14,11 @@ Uso básico:
 Autor: BUEORM (dalusx64@gmail.com)
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 # --- Core ---
 from halo.core.config import HaloConfig
+from halo.core.device import optimize_for_device, get_optimal_device, device_info
 
 # --- Models ---
 from halo.models.halo_model import HaloSModel
@@ -45,6 +46,10 @@ from halo.utils.metrics import count_parameters
 __all__ = [
     # Core
     "HaloConfig",
+    # Device
+    "optimize_for_device",
+    "get_optimal_device",
+    "device_info",
     # Models
     "HaloSModel",
     "BaselineModel",
