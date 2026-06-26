@@ -159,9 +159,18 @@ def load_model(model_name):
     model.eval()
 
     # Optimizar para el dispositivo actual (CPU en Spaces, GPU si disponible)
+    # NO usar torch.compile — en generación autoregresiva la compilación
+    # del grafo tarda más que la inferencia misma para modelos pequeños
     device = get_optimal_device()
     model = model.to(device)
-    model = optimize_for_device(model, device=device, mode="inference")
+
+    # Solo aplicar optimizaciones ligeras (TF32, threads) sin compile
+    import os
+    if "cuda" in device:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+    else:
+        torch.set_num_threads(os.cpu_count() or 4)
 
     _model_cache[model_name] = model
     return model
